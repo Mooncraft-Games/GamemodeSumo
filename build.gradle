@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+}
+
+group 'net.mooncraftgames.mantle'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven {
+        url = 'https://repo.nukkitx.com/maven-snapshots'
+    }
+}
+
+dependencies {
+    compile 'cn.nukkit:nukkit:1.0-SNAPSHOT'
+    compileOnly fileTree(dir: 'libs', include: '*jar')
+}
