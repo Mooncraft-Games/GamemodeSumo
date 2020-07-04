@@ -56,13 +56,6 @@ public class GameBehaviorSumo extends GameBehavior {
         setupLookups();
     }
 
-    public void setupLookups(){
-        for(Player player: getSessionHandler().getPlayers()){
-            playerLookup.put(player.getName(), player.getPlayer());
-        }
-        retainedKits = new HashMap<>(getSessionHandler().getAppliedSessionKits());
-    }
-
     @Override
     public void registerGameSchedulerTasks() {
         // Small little hack to apply this as soon as the game has started.
@@ -251,6 +244,13 @@ public class GameBehaviorSumo extends GameBehavior {
         SessionLeaderboardPlayerEntry newEntry;
         newEntry = new SessionLeaderboardPlayerEntry(score, player);
         return newEntry;
+    }
+
+    public void setupLookups(){
+        for(Player player: getSessionHandler().getPlayers()){
+            playerLookup.put(player.getName(), player.getPlayer());
+        }
+        retainedKits = new HashMap<>(getSessionHandler().getAppliedSessionKits());
     }
 
     public void resetCountdown(){
