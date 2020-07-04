@@ -4,6 +4,7 @@ import cn.nukkit.Player;
 import cn.nukkit.entity.item.EntityFirework;
 import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.EventPriority;
+import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.item.ItemFirework;
 import cn.nukkit.level.Level;
@@ -27,14 +28,14 @@ import java.util.HashMap;
 
 public class GameBehaviorSumo extends GameBehavior {
 
-    private static final int COUNTDOWN_LENGTH = 3;
+    protected static final int COUNTDOWN_LENGTH = 3;
 
-    private int maxRounds;
-    private boolean isTiebreakerEnabled;
+    protected int maxRounds;
+    protected boolean isTiebreakerEnabled;
 
-    private int roundNumber;
-    private int roundCountdownTracking;
-    private boolean isRoundActive;
+    protected int roundNumber;
+    protected int roundCountdownTracking;
+    protected boolean isRoundActive;
 
     private String[] roundWinners;
     protected ArrayList<SessionLeaderboardEntry> sumoSessionLeaderboard;
@@ -43,17 +44,21 @@ public class GameBehaviorSumo extends GameBehavior {
 
     @Override
     public void onInitialCountdownEnd() {
-        maxRounds = getSessionHandler().getPrimaryMapID().getIntegers().getOrDefault("rounds", 5);
-        if(maxRounds == 0){ maxRounds = 5;}
-        isTiebreakerEnabled = getSessionHandler().getPrimaryMapID().getSwitches().getOrDefault("tiebreaker_enabled", true);
+        this.maxRounds = getSessionHandler().getPrimaryMapID().getIntegers().getOrDefault("rounds", 5);
+        if(this.maxRounds == 0){ this.maxRounds = 5;}
+        this.isTiebreakerEnabled = getSessionHandler().getPrimaryMapID().getSwitches().getOrDefault("tiebreaker_enabled", true);
 
-        roundNumber = 0;
-        isRoundActive = false;
+        this.roundNumber = 0;
+        this.isRoundActive = false;
 
-        roundWinners = isTiebreakerEnabled ? new String[maxRounds+1] : new String[maxRounds];
-        sumoSessionLeaderboard = new ArrayList<>();
-        playerLookup = new HashMap<>();
-        setupLookups();
+        // Vanilla value for the constant is 0.3f - Bumped to 0.6f just to be more impactful for the base game.
+        this.knockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("knockback", 0.6f);
+        this.tiebreakerKnockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("tiebreaker_knockback", 1f);
+
+        this.roundWinners = this.isTiebreakerEnabled ? new String[this.maxRounds+1] : new String[this.maxRounds];
+        this.sumoSessionLeaderboard = new ArrayList<>();
+        this.playerLookup = new HashMap<>();
+        this.setupLookups();
     }
 
     @Override
@@ -258,11 +263,17 @@ public class GameBehaviorSumo extends GameBehavior {
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void onDamage(EntityDamageEvent event){
+    public void onDamage(EntityDamageByEntityEvent event){
         if(event.getEntity() instanceof Player ){
             Player player = (Player) event.getEntity();
-            if(getSessionHandler().getPlayers().contains(player) && !isRoundActive){
+            if(getSessionHandler().getPlayers().contains(player)){
                 event.setCancelled(true);
+
+                //I have no clue what this does. EntityLiving#attack() uses it though sooo...
+                double deltaX = player.getX() - event.getDamager().getX();
+                double deltaZ = player.getZ() - event.getDamager().getZ();
+                player.knockBack(event.getDamager(), 0, deltaX, deltaZ);
+                event.getKnockBack();
             }
         }
     }
