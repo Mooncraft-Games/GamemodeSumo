@@ -275,8 +275,8 @@ public class GameBehaviorSumo extends GameBehavior {
                 //I have no clue what this does. EntityLiving#attack() uses it though sooo...
                 double deltaX = player.getX() - event.getDamager().getX();
                 double deltaZ = player.getZ() - event.getDamager().getZ();
-                player.knockBack(event.getDamager(), 0, deltaX, deltaZ);
-                event.getKnockBack();
+                float knockbackValue = (isTiebreakerEnabled && (roundNumber > maxRounds)) ? tiebreakerKnockbackConstant:knockbackConstant;
+                player.knockBack(event.getDamager(), 0, deltaX, deltaZ, knockbackValue);
             }
         }
     }
