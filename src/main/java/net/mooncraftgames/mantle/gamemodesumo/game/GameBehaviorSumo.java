@@ -37,18 +37,21 @@ public class GameBehaviorSumo extends GameBehavior {
     private boolean isRoundActive;
 
     private String[] roundWinners;
+    protected ArrayList<SessionLeaderboardEntry> sumoSessionLeaderboard;
     private HashMap<String, Player> playerLookup;
     private HashMap<Player, Kit> retainedKits;
 
     @Override
     public void onInitialCountdownEnd() {
         maxRounds = getSessionHandler().getPrimaryMapID().getIntegers().getOrDefault("rounds", 5);
+        if(maxRounds == 0){ maxRounds = 5;}
         isTiebreakerEnabled = getSessionHandler().getPrimaryMapID().getSwitches().getOrDefault("tiebreaker_enabled", true);
 
         roundNumber = 0;
         isRoundActive = false;
 
         roundWinners = isTiebreakerEnabled ? new String[maxRounds+1] : new String[maxRounds];
+        sumoSessionLeaderboard = new ArrayList<>();
         playerLookup = new HashMap<>();
         setupLookups();
     }
@@ -81,6 +84,17 @@ public class GameBehaviorSumo extends GameBehavior {
         isRoundActive = false;
         moveAllToDead();
         displayRoundWinner();
+        sumoSessionLeaderboard = computeLeaderboard();
+        if(roundNumber >= maxRounds) {
+            if (sumoSessionLeaderboard.get(0).isTied() && isTiebreakerEnabled) {
+                getSessionHandler().getGameScheduler().registerGameTask(this::startRound, 20, 0);
+            } else {
+                Player[] winners = sumoSessionLeaderboard.get(0).getPlayers();
+                getSessionHandler().declareVictoryForPlayer(winners[0]);
+            }
+        } else {
+            getSessionHandler().getGameScheduler().registerGameTask(this::startRound, 20, 0);
+        }
     }
 
     public void activateRound(){
