@@ -10,7 +10,7 @@ public class SessionLeaderboardTeamEntry extends SessionLeaderboardEntry {
 
     protected ArrayList<Team> teams;
 
-    protected SessionLeaderboardTeamEntry(int trackedScore, Team... teams) {
+    public SessionLeaderboardTeamEntry(int trackedScore, Team... teams) {
         super(trackedScore);
         this.teams = new ArrayList<>(Arrays.asList(teams));
     }

@@ -9,7 +9,7 @@ public class SessionLeaderboardPlayerEntry extends SessionLeaderboardEntry {
 
     protected ArrayList<Player> players;
 
-    protected SessionLeaderboardPlayerEntry(int trackedScore, Player... players) {
+    public SessionLeaderboardPlayerEntry(int trackedScore, Player... players) {
         super(trackedScore);
         this.players = new ArrayList<>(Arrays.asList(players));
     }
