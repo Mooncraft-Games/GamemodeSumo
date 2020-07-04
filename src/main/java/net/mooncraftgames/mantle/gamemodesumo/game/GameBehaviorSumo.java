@@ -37,7 +37,10 @@ public class GameBehaviorSumo extends GameBehavior {
     protected int roundCountdownTracking;
     protected boolean isRoundActive;
 
-    private String[] roundWinners;
+    protected float knockbackConstant;
+    protected float tiebreakerKnockbackConstant;
+
+    protected String[] roundWinners;
     protected ArrayList<SessionLeaderboardEntry> sumoSessionLeaderboard;
     private HashMap<String, Player> playerLookup;
     private HashMap<Player, Kit> retainedKits;
