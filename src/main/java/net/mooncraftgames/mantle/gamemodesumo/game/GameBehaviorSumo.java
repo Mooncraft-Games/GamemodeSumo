@@ -13,6 +13,7 @@ import cn.nukkit.utils.TextFormat;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import net.mooncraftgames.mantle.gamemodesumo.victorytracking.SessionLeaderboardEntry;
+import net.mooncraftgames.mantle.gamemodesumo.victorytracking.SessionLeaderboardPlayerEntry;
 import net.mooncraftgames.mantle.newgamesapi.Utility;
 import net.mooncraftgames.mantle.newgamesapi.game.GameBehavior;
 import net.mooncraftgames.mantle.newgamesapi.kits.Kit;
@@ -195,7 +196,7 @@ public class GameBehaviorSumo extends GameBehavior {
         }
     }
 
-    public ArrayList<Player> getLeaderboard(){
+    public ArrayList<SessionLeaderboardEntry> computeLeaderboard(){
         HashMap<String, Integer> tally = new HashMap<>();
         for(String winner: roundWinners){
             int originalValue = tally.getOrDefault(winner, 0);
@@ -203,8 +204,39 @@ public class GameBehaviorSumo extends GameBehavior {
         }
         ArrayList<SessionLeaderboardEntry> sessionLeaderboard = new ArrayList<>();
         for(String winner: tally.keySet()){
-
+            ArrayList<SessionLeaderboardEntry> copy = new ArrayList<>(sessionLeaderboard);
+            boolean foundPosition = false;
+            for(int i = 0; i < copy.size(); i++){
+                if(tally.get(winner) == copy.get(i).getTrackedScore()){
+                    sessionLeaderboard.remove(i);
+                    sessionLeaderboard.add(i, getUpdatedLeaderboardEntryForID(winner, sessionLeaderboard.get(i)));
+                    foundPosition = true;
+                    break;
+                } else if(tally.get(winner) > copy.get(i).getTrackedScore()){
+                    sessionLeaderboard.add(i, getNewLeaderboardEntryForID(winner, tally.get(winner)));
+                    foundPosition = true;
+                    break;
+                }
+            }
+            if(!foundPosition){
+                sessionLeaderboard.add(getNewLeaderboardEntryForID(winner, tally.get(winner)));
+            }
         }
+        return sessionLeaderboard;
+    }
+
+    protected SessionLeaderboardEntry getUpdatedLeaderboardEntryForID(String id, SessionLeaderboardEntry lastEntry){
+        Player player = playerLookup.get(id);
+        SessionLeaderboardPlayerEntry entry = (SessionLeaderboardPlayerEntry) lastEntry;
+        entry.addPlayer(player, entry.getTrackedScore());
+        return lastEntry;
+    }
+
+    protected SessionLeaderboardEntry getNewLeaderboardEntryForID(String id, int score){
+        Player player = playerLookup.get(id);
+        SessionLeaderboardPlayerEntry newEntry;
+        newEntry = new SessionLeaderboardPlayerEntry(score, player);
+        return newEntry;
     }
 
     public void resetCountdown(){
