@@ -257,5 +257,14 @@ public class GameBehaviorSumo extends GameBehavior {
         roundCountdownTracking = COUNTDOWN_LENGTH + 1;
     }
 
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onDamage(EntityDamageEvent event){
+        if(event.getEntity() instanceof Player ){
+            Player player = (Player) event.getEntity();
+            if(getSessionHandler().getPlayers().contains(player) && !isRoundActive){
+                event.setCancelled(true);
+            }
+        }
+    }
 
 }
