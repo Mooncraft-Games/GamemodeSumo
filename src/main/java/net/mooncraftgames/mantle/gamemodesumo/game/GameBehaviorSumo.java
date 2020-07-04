@@ -139,7 +139,7 @@ public class GameBehaviorSumo extends GameBehavior {
         //TODO: For tiebreaker, only select the tied teams.
         if(roundNumber > maxRounds && isTiebreakerEnabled){
             DeadTeam deadTeam = (DeadTeam) getSessionHandler().getTeams().get(TeamPresets.DEAD_TEAM_ID);
-            for(Player player: getTiebreakerPlayers()){
+            for(Player player: sumoSessionLeaderboard.get(0).getPlayers()){
                 if(deadTeam.getPlayers().contains(player)){
                     getSessionHandler().revivePlayerFromDeadTeam(player);
                 }
