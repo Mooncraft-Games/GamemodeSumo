@@ -69,7 +69,7 @@ public class GameBehaviorSumo extends GameBehavior {
         // Small little hack to apply this as soon as the game has started.
         moveAllToDead();
         getSessionHandler().getGameScheduler().registerGameTask(this::startRound, 0, 0);
-
+        getSessionHandler().getGameScheduler().registerGameTask(this::checkRoundStatus, 0, 1);
     }
 
     public void startRound(){
@@ -111,6 +111,22 @@ public class GameBehaviorSumo extends GameBehavior {
             }
         }
         isRoundActive = true;
+    }
+
+    public void checkRoundStatus(){
+        if(isRoundActive && deathCheck()){
+            endRound();
+        }
+    }
+
+    public boolean deathCheck(){
+        int playersAlive = 0;
+        for(Team team: getSessionHandler().getTeams().values()){
+            if(team.isActiveGameTeam()){
+                playersAlive += team.getPlayers().size();
+            }
+        }
+        return playersAlive <= 1;
     }
 
     public void countdownToRoundStart(){
