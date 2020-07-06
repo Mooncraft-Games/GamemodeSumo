@@ -147,7 +147,7 @@ public class GameBehaviorSumo extends GameBehavior {
             }
         } else {
             Team deadTeam = getSessionHandler().getTeams().get(TeamPresets.DEAD_TEAM_ID);
-            for(Player player: deadTeam.getPlayers()){
+            for(Player player: new ArrayList<>(deadTeam.getPlayers())){
                 getSessionHandler().revivePlayerFromDeadTeam(player);
             }
         }
