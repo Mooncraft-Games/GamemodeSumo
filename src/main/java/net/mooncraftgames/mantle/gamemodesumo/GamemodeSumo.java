@@ -27,7 +27,7 @@ public class GamemodeSumo extends PluginBase {
                 .setCanPlayersMoveDuringCountdown(false)
                 .setCanWorldBeManipulated(false)
                 .setDefaultCountdownLength(10)
-                .setMinimumPlayers(4)
+                .setMinimumPlayers(2)
                 .setGuidelinePlayers(6)
                 .setMaximumPlayers(16);
         GameID sumoID = new GameID("sumo", "sumo", "Sumo", "Slap players off the platform in a multi-rounded gamemode! The last standing wins each round!", "sumo", new String[]{"sumo"}, 1, sumoProperties, GameBehaviorSumo.class);
