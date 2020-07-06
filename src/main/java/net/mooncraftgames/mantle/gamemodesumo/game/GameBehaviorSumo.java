@@ -175,8 +175,12 @@ public class GameBehaviorSumo extends GameBehavior {
             }
             paras[maxRounds+2] = ">" +TextFormat.GOLD + TextFormat.BOLD + String.format("> %s: %s%s", "Finals", TextFormat.RESET, getRoundWinnerDisplayName(maxRounds+1));
         } else {
-            for(int i = 1; i < maxRounds; i++){
-                paras[i+1] = "" +TextFormat.RED + TextFormat.BOLD + String.format("%s %s: %s%s", roundNumber == i? ">":"", i, TextFormat.RESET, getRoundWinnerDisplayName(i));
+            for(int i = 1; i <= roundNumber; i++){
+                if(i == roundNumber) {
+                    paras[i + 1] = "" + TextFormat.RED + TextFormat.BOLD + String.format("%s: %s...", i, TextFormat.GOLD);
+                } else {
+                    paras[i + 1] = "" + TextFormat.RED + TextFormat.BOLD + String.format("%s: %s%s", i, TextFormat.RESET, getRoundWinnerDisplayName(i));
+                }
             }
         }
 
