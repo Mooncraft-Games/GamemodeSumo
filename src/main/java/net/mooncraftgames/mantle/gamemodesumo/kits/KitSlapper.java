@@ -30,7 +30,7 @@ public class KitSlapper extends Kit {
     @Override
     public Item[] getKitItems() {
         Item slapItem =  new ItemFish().setCustomName(""+TextFormat.GREEN+TextFormat.BOLD+"Ol' Slappy");
-        slapItem.addEnchantment(Enchantment.get(Enchantment.ID_KNOCKBACK).setLevel(4));
+        slapItem.addEnchantment(Enchantment.get(Enchantment.ID_PROTECTION_ALL).setLevel(1));
         return new Item[]{
            slapItem
         };
