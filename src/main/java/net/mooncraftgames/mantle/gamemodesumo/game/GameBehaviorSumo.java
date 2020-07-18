@@ -50,8 +50,8 @@ public class GameBehaviorSumo extends GameBehavior {
         this.isRoundActive = false;
 
         // Vanilla value for the constant is 0.3f - Bumped to 0.6f just to be more impactful for the base game.
-        this.knockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("knockback", 0.35f);
-        this.tiebreakerKnockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("tiebreaker_knockback", 0.45f);
+        this.knockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("knockback", 0.5f);
+        this.tiebreakerKnockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("tiebreaker_knockback", 0.8f);
 
         this.roundWinners = this.isTiebreakerEnabled ? new String[this.maxRounds+1] : new String[this.maxRounds];
         this.sumoSessionLeaderboard = new ArrayList<>();
@@ -67,15 +67,15 @@ public class GameBehaviorSumo extends GameBehavior {
 
     @Override
     public void onPlayerLeaveGame(Player player) {
-        if(isRoundActive) onHandleDeath();
+        if(isRoundActive) onHandleDeath(player);
     }
 
-    @Override public void onGameMiscDeathEvent(GamePlayerDeathEvent event) { onHandleDeath();  }
-    @Override public void onGameDeathByPlayer(GamePlayerDeathEvent event) { onHandleDeath();  }
-    @Override public void onGameDeathByBlock(GamePlayerDeathEvent event) { onHandleDeath();  }
-    @Override public void onGameDeathByEntity(GamePlayerDeathEvent event) { onHandleDeath(); }
-    public void onHandleDeath(){
-        if(deathCheck()){
+    @Override public void onGameMiscDeathEvent(GamePlayerDeathEvent event) { onHandleDeath(event.getDeathCause().getVictim());  }
+    @Override public void onGameDeathByPlayer(GamePlayerDeathEvent event) { onHandleDeath(event.getDeathCause().getVictim());  }
+    @Override public void onGameDeathByBlock(GamePlayerDeathEvent event) { onHandleDeath(event.getDeathCause().getVictim());  }
+    @Override public void onGameDeathByEntity(GamePlayerDeathEvent event) { onHandleDeath(event.getDeathCause().getVictim()); }
+    public void onHandleDeath(Player victim){
+        if(deathCheck(victim)){
             endRound();
         }
     }
@@ -123,7 +123,7 @@ public class GameBehaviorSumo extends GameBehavior {
         isRoundActive = true;
     }
 
-    public boolean deathCheck(){
+    public boolean deathCheck(Player killedPlayer){
         if(isRoundActive){
             ArrayList<Player> playersAlive = new ArrayList<>();
             for(Team team: getSessionHandler().getTeams().values()){
@@ -131,12 +131,13 @@ public class GameBehaviorSumo extends GameBehavior {
                     playersAlive.addAll(team.getPlayers());
                 }
             }
+            if(killedPlayer != null) playersAlive.remove(killedPlayer);
             if(playersAlive.size() == 1){
                 Player player = playersAlive.get(0);
-                roundWinners[roundNumber] = player.getName();
+                roundWinners[roundNumber-1] = player.getName();
                 return true;
             } else if (playersAlive.size() == 0) {
-                roundWinners[roundNumber] = null;
+                roundWinners[roundNumber-1] = null;
                 return true;
             }
         }
@@ -323,7 +324,7 @@ public class GameBehaviorSumo extends GameBehavior {
                 //I have no clue what this does. EntityLiving#attack() uses it though sooo...
                 double deltaX = player.getX() - event.getDamager().getX();
                 double deltaZ = player.getZ() - event.getDamager().getZ();
-                float knockbackValue = (isTiebreakerEnabled && (roundNumber > maxRounds)) ? tiebreakerKnockbackConstant:knockbackConstant;
+                double knockbackValue = (isTiebreakerEnabled && (roundNumber > maxRounds)) ? tiebreakerKnockbackConstant:knockbackConstant;
                 player.knockBack(event.getDamager(), 0, deltaX, deltaZ, knockbackValue);
             }
         }
