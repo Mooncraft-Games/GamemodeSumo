@@ -50,8 +50,8 @@ public class GameBehaviorSumo extends GameBehavior {
         this.isRoundActive = false;
 
         // Vanilla value for the constant is 0.3f - Bumped to 0.6f just to be more impactful for the base game.
-        this.knockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("knockback", 0.6f);
-        this.tiebreakerKnockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("tiebreaker_knockback", 1f);
+        this.knockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("knockback", 0.35f);
+        this.tiebreakerKnockbackConstant = getSessionHandler().getPrimaryMapID().getFloats().getOrDefault("tiebreaker_knockback", 0.45f);
 
         this.roundWinners = this.isTiebreakerEnabled ? new String[this.maxRounds+1] : new String[this.maxRounds];
         this.sumoSessionLeaderboard = new ArrayList<>();
