@@ -181,19 +181,18 @@ public class GameBehaviorSumo extends GameBehavior {
     }
 
     public void reviveRoundPlayers(){
-        //TODO: For tiebreaker, only select the tied teams.
         if(roundNumber > maxRounds && isTiebreakerEnabled){
             DeadTeam deadTeam = (DeadTeam) getSessionHandler().getTeams().get(TeamPresets.DEAD_TEAM_ID);
             for(Player player: sumoSessionLeaderboard.get(0).getPlayers()){
                 if(deadTeam.getPlayers().contains(player)){
-                    getSessionHandler().revivePlayerFromDeadTeam(player);
+                    getSessionHandler().getDeathManager().revivePlayerFromDeadTeam(player);
                     player.setImmobile(true);
                 }
             }
         } else {
             Team deadTeam = getSessionHandler().getTeams().get(TeamPresets.DEAD_TEAM_ID);
             for(Player player: new ArrayList<>(deadTeam.getPlayers())){
-                getSessionHandler().revivePlayerFromDeadTeam(player);
+                getSessionHandler().getDeathManager().revivePlayerFromDeadTeam(player);
                 player.setImmobile(true);
             }
         }
