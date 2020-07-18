@@ -17,6 +17,10 @@ import net.mooncraftgames.mantle.gamemodesumo.victorytracking.SessionLeaderboard
 import net.mooncraftgames.mantle.gamemodesumo.victorytracking.SessionLeaderboardPlayerEntry;
 import net.mooncraftgames.mantle.newgamesapi.Utility;
 import net.mooncraftgames.mantle.newgamesapi.game.GameBehavior;
+import net.mooncraftgames.mantle.newgamesapi.game.events.GamePlayerDeathByBlockEvent;
+import net.mooncraftgames.mantle.newgamesapi.game.events.GamePlayerDeathByEntityEvent;
+import net.mooncraftgames.mantle.newgamesapi.game.events.GamePlayerDeathByPlayerEvent;
+import net.mooncraftgames.mantle.newgamesapi.game.events.GamePlayerDeathEvent;
 import net.mooncraftgames.mantle.newgamesapi.kits.Kit;
 import net.mooncraftgames.mantle.newgamesapi.team.DeadTeam;
 import net.mooncraftgames.mantle.newgamesapi.team.SpectatingTeam;
@@ -25,6 +29,7 @@ import net.mooncraftgames.mantle.newgamesapi.team.TeamPresets;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Optional;
 
 public class GameBehaviorSumo extends GameBehavior {
 
@@ -61,15 +66,28 @@ public class GameBehaviorSumo extends GameBehavior {
         this.roundWinners = this.isTiebreakerEnabled ? new String[this.maxRounds+1] : new String[this.maxRounds];
         this.sumoSessionLeaderboard = new ArrayList<>();
         this.playerLookup = new HashMap<>();
-        this.setupLookups();
     }
 
     @Override
     public void registerGameSchedulerTasks() {
-        // Small little hack to apply this as soon as the game has started.
+        setupLookups();
         moveAllToDead();
         getSessionHandler().getGameScheduler().registerGameTask(this::startRound, 0, 0);
-        getSessionHandler().getGameScheduler().registerGameTask(this::checkRoundStatus, 0, 1);
+    }
+
+    @Override
+    public void onPlayerLeaveGame(Player player) {
+        if(isRoundActive) onHandleDeath();
+    }
+
+    @Override public void onGameMiscDeathEvent(GamePlayerDeathEvent event) { onHandleDeath();  }
+    @Override public void onGameDeathByPlayer(GamePlayerDeathEvent event) { onHandleDeath();  }
+    @Override public void onGameDeathByBlock(GamePlayerDeathEvent event) { onHandleDeath();  }
+    @Override public void onGameDeathByEntity(GamePlayerDeathEvent event) { onHandleDeath(); }
+    public void onHandleDeath(){
+        if(deathCheck()){
+            endRound();
+        }
     }
 
     public void startRound(){
@@ -78,29 +96,31 @@ public class GameBehaviorSumo extends GameBehavior {
         sendRoundNumber();
         reviveRoundPlayers();
         resetCountdown();
-        getSessionHandler().getGameScheduler().registerGameTask(this::countdownToRoundStart, 60, 20);
+        getSessionHandler().getGameScheduler().registerGameTask(this::countdownToRoundStart, 100, 20);
     }
 
     public void endRound(){
         isRoundActive = false;
         moveAllToDead();
         displayRoundWinner();
-        sumoSessionLeaderboard = computeLeaderboard();
-        if(roundNumber >= maxRounds) {
-            if (sumoSessionLeaderboard.get(0).isTied() && isTiebreakerEnabled) {
-                getSessionHandler().getGameScheduler().registerGameTask(this::startRound, 20, 0);
-            } else {
-                Player[] winners = sumoSessionLeaderboard.get(0).getPlayers();
-                getSessionHandler().declareVictoryForPlayer(winners[0]);
-            }
-        } else {
-            getSessionHandler().getGameScheduler().registerGameTask(this::startRound, 20, 0);
-        }
+        getSessionHandler().getGameScheduler().registerGameTask(() -> {
+                sumoSessionLeaderboard = computeLeaderboard();
+                if (roundNumber >= maxRounds) {
+                    if (sumoSessionLeaderboard.get(0).isTied() && isTiebreakerEnabled) {
+                        getSessionHandler().getGameScheduler().registerGameTask(this::startRound, 20, 0);
+                    } else {
+                        Player[] winners = sumoSessionLeaderboard.get(0).getPlayers();
+                        getSessionHandler().declareVictoryForPlayer(winners[0]);
+                    }
+                } else {
+                    getSessionHandler().getGameScheduler().registerGameTask(this::startRound, 20, 0);
+                }
+        }, 20, 0);
     }
 
     public void activateRound(){
         Level level = getSessionHandler().getPrimaryMap();
-        for(Team team: getTeams()){
+        for(Team team: getSessionHandler().getTeams().values()){
             for(Player player: team.getPlayers()) {
                 level.addSound(player.getPosition(), Sound.RAID_HORN, 0.25f, 1.5f, player);
                 player.sendTitle(""+TextFormat.BLUE+TextFormat.BOLD+"SUMO!", " ", 4, 12, 4);
@@ -113,30 +133,36 @@ public class GameBehaviorSumo extends GameBehavior {
         isRoundActive = true;
     }
 
-    public void checkRoundStatus(){
-        if(isRoundActive && deathCheck()){
-            endRound();
-        }
-    }
-
     public boolean deathCheck(){
-        int playersAlive = 0;
-        for(Team team: getSessionHandler().getTeams().values()){
-            if(team.isActiveGameTeam()){
-                playersAlive += team.getPlayers().size();
+        if(isRoundActive){
+            ArrayList<Player> playersAlive = new ArrayList<>();
+            for(Team team: getSessionHandler().getTeams().values()){
+                if(team.isActiveGameTeam()){
+                    playersAlive.addAll(team.getPlayers());
+                }
+            }
+            if(playersAlive.size() == 1){
+                Player player = playersAlive.get(0);
+                roundWinners[roundNumber] = player.getName();
+                return true;
+            } else if (playersAlive.size() == 0) {
+                roundWinners[roundNumber] = null;
+                return true;
             }
         }
-        return playersAlive <= 1;
+        return false;
     }
 
     public void countdownToRoundStart(){
-        roundCountdownTracking--;
-        if(roundCountdownTracking <= 0){
-            activateRound();
-        } else {
-            for(Player player: getSessionHandler().getPlayers()) {
-                player.sendTitle("" + TextFormat.DARK_AQUA + TextFormat.BOLD + roundCountdownTracking, TextFormat.BLUE + "Get ready to...", 4, 12, 4);
-                getSessionHandler().getPrimaryMap().addSound(player.getPosition(), Sound.NOTE_BANJO, 1f, 0.8f, player);
+        if(!isRoundActive) {
+            roundCountdownTracking--;
+            if (roundCountdownTracking <= 0) {
+                activateRound();
+            } else {
+                for (Player player : getSessionHandler().getPlayers()) {
+                    player.sendTitle("" + TextFormat.DARK_AQUA + TextFormat.BOLD + roundCountdownTracking, TextFormat.BLUE + "Get ready to...", 4, 12, 4);
+                    getSessionHandler().getPrimaryMap().addSound(player.getPosition(), Sound.NOTE_BANJO, 1f, 0.8f, player);
+                }
             }
         }
     }
@@ -144,9 +170,11 @@ public class GameBehaviorSumo extends GameBehavior {
     public void moveAllToDead(){
         DeadTeam deadTeam = (DeadTeam) getSessionHandler().getTeams().get(TeamPresets.DEAD_TEAM_ID);
         for(Team team: getSessionHandler().getTeams().values()){
-            if(!(team instanceof SpectatingTeam)){
+            if(team.isActiveGameTeam()){
                 for(Player player: new ArrayList<>(team.getPlayers())){
                     getSessionHandler().switchPlayerToTeam(player, deadTeam, true);
+                    Optional<Kit> kit = getSessionHandler().removePlayerKit(player, true);
+                    kit.ifPresent(k -> retainedKits.put(player, k));
                 }
             }
         }
@@ -159,12 +187,14 @@ public class GameBehaviorSumo extends GameBehavior {
             for(Player player: sumoSessionLeaderboard.get(0).getPlayers()){
                 if(deadTeam.getPlayers().contains(player)){
                     getSessionHandler().revivePlayerFromDeadTeam(player);
+                    player.setImmobile(true);
                 }
             }
         } else {
             Team deadTeam = getSessionHandler().getTeams().get(TeamPresets.DEAD_TEAM_ID);
             for(Player player: new ArrayList<>(deadTeam.getPlayers())){
                 getSessionHandler().revivePlayerFromDeadTeam(player);
+                player.setImmobile(true);
             }
         }
     }
@@ -178,25 +208,27 @@ public class GameBehaviorSumo extends GameBehavior {
     }
 
     public void sendRoundParagraphs(){
-        String[] paras = new String[maxRounds+2];
+        String[] paras = new String[roundNumber+2];
         paras[0] = TextFormat.BOLD+"Rounds: ";
         paras[1] = "";
-        if(isTiebreakerEnabled && (roundNumber == maxRounds+1)){
-            for(int i = 1; i <= roundNumber; i++){
-                if(i == roundNumber) {
-                    paras[i + 1] = "" + TextFormat.RED + TextFormat.BOLD + String.format("%s: %s...", i, TextFormat.GOLD);
+
+        for(int i = 1; i <= roundNumber; i++){
+            if(roundNumber == i) {
+                TextFormat colourMain;
+                TextFormat colourHighlight;
+                String roundTag;
+                if(roundNumber > maxRounds){
+                    colourMain = TextFormat.GOLD;
+                    colourHighlight = TextFormat.YELLOW;
+                    roundTag = "TIE";
                 } else {
-                    paras[i + 1] = "" + TextFormat.RED + TextFormat.BOLD + String.format("%s: %s%s", i, TextFormat.RESET, getRoundWinnerDisplayName(i));
+                    colourMain = TextFormat.RED;
+                    colourHighlight = TextFormat.GRAY;
+                    roundTag = String.valueOf(i);
                 }
-            }
-            paras[maxRounds+2] = ">" +TextFormat.GOLD + TextFormat.BOLD + String.format("> %s: %s%s", "Finals", TextFormat.RESET, getRoundWinnerDisplayName(maxRounds+1));
-        } else {
-            for(int i = 1; i <= roundNumber; i++){
-                if(i == roundNumber) {
-                    paras[i + 1] = "" + TextFormat.RED + TextFormat.BOLD + String.format("%s: %s...", i, TextFormat.GOLD);
-                } else {
-                    paras[i + 1] = "" + TextFormat.RED + TextFormat.BOLD + String.format("%s: %s%s", i, TextFormat.RESET, getRoundWinnerDisplayName(i));
-                }
+                paras[i + 1] = String.format("%s%s> %s%s%s%s: %s...", colourHighlight, TextFormat.BOLD, TextFormat.RESET, colourMain, TextFormat.BOLD, roundTag, TextFormat.RESET);
+            } else {
+                paras[i + 1] = "" + TextFormat.RED + TextFormat.BOLD + String.format("%s: %s%s", i, TextFormat.RESET, getRoundWinnerDisplayName(i));
             }
         }
 
@@ -226,6 +258,9 @@ public class GameBehaviorSumo extends GameBehavior {
             return "[Unintentional Bug. Don't mind me xoxo]";
         } else {
             String id = roundWinners[roundOffset];
+            if(id == null){
+                return TextFormat.DARK_RED+"No Contest";
+            }
             Player rw = playerLookup.get(id);
             if(rw == null){
                 return TextFormat.RED+"[-] "+TextFormat.DARK_RED+TextFormat.STRIKETHROUGH+id;
@@ -289,7 +324,7 @@ public class GameBehaviorSumo extends GameBehavior {
         roundCountdownTracking = COUNTDOWN_LENGTH + 1;
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event){
         if(event.getEntity() instanceof Player ){
             Player player = (Player) event.getEntity();
