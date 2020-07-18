@@ -1,29 +1,19 @@
 package net.mooncraftgames.mantle.gamemodesumo.game;
 
 import cn.nukkit.Player;
-import cn.nukkit.entity.item.EntityFirework;
 import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.EventPriority;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
-import cn.nukkit.event.entity.EntityDamageEvent;
-import cn.nukkit.item.ItemFirework;
 import cn.nukkit.level.Level;
-import cn.nukkit.level.ParticleEffect;
 import cn.nukkit.level.Sound;
 import cn.nukkit.utils.TextFormat;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import net.mooncraftgames.mantle.gamemodesumo.victorytracking.SessionLeaderboardEntry;
 import net.mooncraftgames.mantle.gamemodesumo.victorytracking.SessionLeaderboardPlayerEntry;
 import net.mooncraftgames.mantle.newgamesapi.Utility;
 import net.mooncraftgames.mantle.newgamesapi.game.GameBehavior;
-import net.mooncraftgames.mantle.newgamesapi.game.events.GamePlayerDeathByBlockEvent;
-import net.mooncraftgames.mantle.newgamesapi.game.events.GamePlayerDeathByEntityEvent;
-import net.mooncraftgames.mantle.newgamesapi.game.events.GamePlayerDeathByPlayerEvent;
 import net.mooncraftgames.mantle.newgamesapi.game.events.GamePlayerDeathEvent;
 import net.mooncraftgames.mantle.newgamesapi.kits.Kit;
 import net.mooncraftgames.mantle.newgamesapi.team.DeadTeam;
-import net.mooncraftgames.mantle.newgamesapi.team.SpectatingTeam;
 import net.mooncraftgames.mantle.newgamesapi.team.Team;
 import net.mooncraftgames.mantle.newgamesapi.team.TeamPresets;
 
