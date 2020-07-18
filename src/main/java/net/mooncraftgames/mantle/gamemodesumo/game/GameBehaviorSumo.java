@@ -6,6 +6,7 @@ import cn.nukkit.event.EventPriority;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Sound;
+import cn.nukkit.scheduler.Task;
 import cn.nukkit.utils.TextFormat;
 import net.mooncraftgames.mantle.gamemodesumo.victorytracking.SessionLeaderboardEntry;
 import net.mooncraftgames.mantle.gamemodesumo.victorytracking.SessionLeaderboardPlayerEntry;
@@ -20,6 +21,7 @@ import net.mooncraftgames.mantle.newgamesapi.team.TeamPresets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class GameBehaviorSumo extends GameBehavior {
 
@@ -29,7 +31,7 @@ public class GameBehaviorSumo extends GameBehavior {
     protected boolean isTiebreakerEnabled;
 
     protected int roundNumber;
-    protected int roundCountdownTracking;
+    protected AtomicInteger roundCountdownTracking;
     protected boolean isRoundActive;
 
     protected float knockbackConstant;
@@ -47,6 +49,7 @@ public class GameBehaviorSumo extends GameBehavior {
         this.isTiebreakerEnabled = getSessionHandler().getPrimaryMapID().getSwitches().getOrDefault("tiebreaker_enabled", true);
 
         this.roundNumber = 0;
+        this.roundCountdownTracking = new AtomicInteger();
         this.isRoundActive = false;
 
         // Vanilla value for the constant is 0.3f - Bumped to 0.6f just to be more impactful for the base game.
@@ -85,8 +88,8 @@ public class GameBehaviorSumo extends GameBehavior {
         sendRoundParagraphs();
         sendRoundNumber();
         reviveRoundPlayers();
-        resetCountdown();
-        getSessionHandler().getGameScheduler().registerGameTask(this::countdownToRoundStart, 100, 20);
+        roundCountdownTracking.set(COUNTDOWN_LENGTH);
+        getSessionHandler().getGameScheduler().registerSelfCancellableGameTask(this::countdownToRoundStart, 100, 20);
     }
 
     public void endRound(){
@@ -144,14 +147,15 @@ public class GameBehaviorSumo extends GameBehavior {
         return false;
     }
 
-    public void countdownToRoundStart(){
+    public void countdownToRoundStart(Task handler){
         if(!isRoundActive) {
-            roundCountdownTracking--;
-            if (roundCountdownTracking <= 0) {
+            int countdown = roundCountdownTracking.getAndDecrement();
+            if (countdown <= 0) {
                 activateRound();
+                handler.cancel();
             } else {
                 for (Player player : getSessionHandler().getPlayers()) {
-                    player.sendTitle("" + TextFormat.DARK_AQUA + TextFormat.BOLD + roundCountdownTracking, TextFormat.BLUE + "Get ready to...", 4, 12, 4);
+                    player.sendTitle("" + TextFormat.DARK_AQUA + TextFormat.BOLD + countdown, TextFormat.BLUE + "Get ready to...", 4, 12, 4);
                     getSessionHandler().getPrimaryMap().addSound(player.getPosition(), Sound.NOTE_BANJO, 1f, 0.8f, player);
                 }
             }
@@ -308,10 +312,6 @@ public class GameBehaviorSumo extends GameBehavior {
             playerLookup.put(player.getName(), player.getPlayer());
         }
         retainedKits = new HashMap<>(getSessionHandler().getAppliedSessionKits());
-    }
-
-    public void resetCountdown(){
-        roundCountdownTracking = COUNTDOWN_LENGTH + 1;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
