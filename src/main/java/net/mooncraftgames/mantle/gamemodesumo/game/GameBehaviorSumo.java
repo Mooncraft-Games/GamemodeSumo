@@ -277,7 +277,7 @@ public class GameBehaviorSumo extends GameBehavior {
             for(int i = 0; i < copy.size(); i++){
                 if(tally.get(winner) == copy.get(i).getTrackedScore()){
                     sessionLeaderboard.remove(i);
-                    sessionLeaderboard.add(i, getUpdatedLeaderboardEntryForID(winner, sessionLeaderboard.get(i)));
+                    sessionLeaderboard.add(i, getUpdatedLeaderboardEntryForID(winner, copy.get(i)));
                     foundPosition = true;
                     break;
                 } else if(tally.get(winner) > copy.get(i).getTrackedScore()){
