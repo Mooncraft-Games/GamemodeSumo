@@ -2,10 +2,9 @@ name: GamemodeSumo
 main: net.mooncraftgames.mantle.gamemodesumo.GamemodeSumo
 load: POSTWORLD
 version: "1.0.0"
-api: ["1.0.10"]
+api: ["1.0.9"]
 prefix: "gmsumo"
 
 author: "CG360 @ Mooncraft Games"
 description: "A game of sumo designed to be compatible with ngapi v1."
-depend:
-  - "mantlegames"
+depend: ["NewGamesAPI1"]
